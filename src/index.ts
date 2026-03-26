@@ -18,8 +18,14 @@ export type { RetrievalSignal, HybridResult } from './retrieval/hybrid.ts';
 export { selectWithMmr } from './retrieval/mmr.ts';
 export type { MmrResult } from './retrieval/mmr.ts';
 
+// Retrieval (keyword + semantic)
+export { keywordSearch, buildIdfMap } from './retrieval/keyword.ts';
+export { semanticSearch, cosineSimilarity } from './retrieval/semantic.ts';
+
 // Workflow signals
 export { scoreStageProximity } from './workflow/stage.ts';
+export { walkDependencyGraph } from './workflow/graph.ts';
+export { recordFeedback, loadFeedback, scoreMemoryEffectiveness } from './workflow/feedback.ts';
 
 // Pipeline
 export { chunkContent } from './pipeline/chunk.ts';
