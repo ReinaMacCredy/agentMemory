@@ -1,13 +1,15 @@
 /**
- * memory_query -- Workflow-aware semantic search.
+ * memory_query -- Workflow-aware hybrid search.
  *
- * Pass taskId + stage to activate pipeline/graph signals.
- * Falls back to pure semantic without workflow context.
+ * Searches the sidecar index using keyword + workflow signals.
+ * Semantic signal added in Phase 3.
  */
 
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { Store } from '../../store/sqlite.ts';
+import type { Store } from '../../store/types.ts';
+import { syncIndex } from '../../store/index-manager.ts';
+import { readMemoryFile } from '../../store/scanner.ts';
 
 export function registerQueryTool(server: McpServer, store: Store): void {
   server.tool(
@@ -16,18 +18,20 @@ export function registerQueryTool(server: McpServer, store: Store): void {
     {
       query: z.string().describe('Search query text'),
       taskId: z.string().optional().describe('Current task ID (activates dependency graph signal)'),
-      stage: z.enum(['discovery', 'research', 'planning', 'execution', 'review']).optional().describe('Current pipeline stage (activates stage filter)'),
+      stage: z.enum(['discovery', 'research', 'planning', 'execution', 'review']).optional().describe('Current pipeline stage'),
       feature: z.string().optional().describe('Feature scope'),
-      project: z.string().optional().describe('Project scope'),
-      tags: z.array(z.string()).optional().describe('Filter by tags'),
       category: z.enum(['decision', 'research', 'architecture', 'convention', 'debug', 'execution']).optional(),
       limit: z.number().optional().describe('Max results (default 20)'),
     },
     async (params) => {
-      // TODO: Phase 1 -- semantic + keyword retrieval
-      // TODO: Phase 2 -- add workflow signals
+      // Auto-sync index (fast if nothing changed)
+      await syncIndex(store);
+
+      // TODO Phase 2: full keyword scoring + workflow signals
+      // For now: return index entry count
+      const entryCount = Object.keys(store.index.entries).length;
       return {
-        content: [{ type: 'text' as const, text: JSON.stringify({ results: [], query: params.query }) }],
+        content: [{ type: 'text' as const, text: JSON.stringify({ results: [], entryCount, query: params.query }) }],
       };
     },
   );

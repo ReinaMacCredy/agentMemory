@@ -1,15 +1,16 @@
 /**
  * agentMemory public API.
  *
- * When used as a library (imported by maestro), consumers use these exports.
- * When used standalone, the MCP server at src/server/mcp.ts is the entry point.
+ * Retrieval engine for maestro memory files.
+ * Read-only against .maestro/ -- only writes its own index + feedback.
  */
 
 // Store
-export { createStore } from './store/sqlite.ts';
-export type { Store } from './store/sqlite.ts';
-export { writeMemory, deleteMemory, getMemory, searchByKeyword } from './store/repository.ts';
-export type { Memory, MemoryWriteOpts } from './store/repository.ts';
+export { createStore, loadIndex, saveIndex, rebuildIndex, syncIndex } from './store/index-manager.ts';
+export { scanMemoryFiles, readMemoryFile } from './store/scanner.ts';
+export { parseFrontmatter } from './store/frontmatter.ts';
+export { extractKeywords, extractFilenameKeywords } from './store/keywords.ts';
+export type { Store, SidecarIndex, IndexEntry, MemoryMeta, ScannedMemory, FeedbackEntry } from './store/types.ts';
 
 // Retrieval
 export { mergeSignals, DEFAULT_WEIGHTS } from './retrieval/hybrid.ts';
@@ -19,8 +20,6 @@ export type { MmrResult } from './retrieval/mmr.ts';
 
 // Workflow signals
 export { scoreStageProximity } from './workflow/stage.ts';
-export { walkDependencyGraph } from './workflow/graph.ts';
-export { scoreMemoryEffectiveness } from './workflow/feedback.ts';
 
 // Pipeline
 export { chunkContent } from './pipeline/chunk.ts';

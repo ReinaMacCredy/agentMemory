@@ -1,16 +1,20 @@
 /**
  * agentMemory MCP Server
  *
- * Workflow-aware memory layer for agent-driven development.
- * Exposes 6 tools over stdio/SSE transport.
+ * Workflow-aware retrieval engine for maestro memory files.
+ * Read-only against .maestro/ -- only writes its own index + feedback.
+ *
+ * Accepts MAESTRO_DIR env var or defaults to .maestro in cwd.
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerTools } from './tools/index.ts';
-import { createStore } from '../store/sqlite.ts';
+import { createStore } from '../store/index-manager.ts';
+import { join } from 'node:path';
 
-const store = createStore();
+const maestroDir = process.env.MAESTRO_DIR ?? join(process.cwd(), '.maestro');
+const store = createStore(maestroDir);
 
 const server = new McpServer({
   name: 'agent-memory',

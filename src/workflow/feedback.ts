@@ -1,51 +1,60 @@
 /**
  * Execution feedback signal.
  *
- * Tracks which memories were injected for which tasks,
- * correlates with task outcomes, and adjusts future scores.
+ * Reads .maestro/feedback.jsonl to correlate memories with task outcomes.
+ * Writes handled by the feedback MCP tool.
  */
 
-import type { Store } from '../store/sqlite.ts';
+import { existsSync, readFileSync, appendFileSync } from 'node:fs';
+import type { Store, FeedbackEntry } from '../store/types.ts';
 
-interface FeedbackRow {
-  outcome: string;
-  revision_count: number;
-  verification_passed: number | null;
-  injected_memory_ids: string;
+/**
+ * Append a feedback entry to feedback.jsonl.
+ */
+export function recordFeedback(store: Store, entry: FeedbackEntry): void {
+  const line = JSON.stringify(entry) + '\n';
+  appendFileSync(store.feedbackPath, line);
 }
 
 /**
- * Compute effectiveness score for a memory based on historical outcomes.
+ * Load all feedback entries.
+ */
+export function loadFeedback(store: Store): FeedbackEntry[] {
+  if (!existsSync(store.feedbackPath)) return [];
+
+  try {
+    const raw = readFileSync(store.feedbackPath, 'utf-8');
+    return raw.trim().split('\n')
+      .filter(Boolean)
+      .map(line => JSON.parse(line) as FeedbackEntry);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Score a memory's effectiveness based on historical task outcomes.
  * Returns -1.0 to 1.0 where positive = correlated with success.
  */
-export function scoreMemoryEffectiveness(store: Store, memoryId: string): number {
-  const rows = store.db.query<FeedbackRow, [string]>(
-    `SELECT outcome, revision_count, verification_passed, injected_memory_ids
-     FROM feedback
-     WHERE injected_memory_ids LIKE ?
-     ORDER BY created_at DESC
-     LIMIT 20`,
-  ).all(`%${memoryId}%`);
+export function scoreMemoryEffectiveness(store: Store, memoryRelPath: string): number {
+  const entries = loadFeedback(store);
+  const relevant = entries.filter(e => e.injectedPaths?.includes(memoryRelPath));
 
-  if (rows.length === 0) return 0; // no data, neutral score
+  if (relevant.length === 0) return 0;
 
   let score = 0;
-  for (const row of rows) {
-    const ids: string[] = JSON.parse(row.injected_memory_ids);
-    if (!ids.includes(memoryId)) continue;
+  for (const entry of relevant) {
+    if (entry.outcome === 'success') score += 1;
+    else if (entry.outcome === 'failure') score -= 1;
+    else score += 0.3;
 
-    if (row.outcome === 'success') score += 1;
-    else if (row.outcome === 'failure') score -= 1;
-    else score += 0.3; // partial
+    if (entry.revisionCount && entry.revisionCount > 1) {
+      score -= (entry.revisionCount - 1) * 0.2;
+    }
 
-    // Revision penalty: each revision beyond 1 is a negative signal
-    if (row.revision_count > 1) score -= (row.revision_count - 1) * 0.2;
-
-    // Verification bonus
-    if (row.verification_passed === 1) score += 0.3;
-    else if (row.verification_passed === 0) score -= 0.3;
+    if (entry.verificationPassed === true) score += 0.3;
+    else if (entry.verificationPassed === false) score -= 0.3;
   }
 
-  // Normalize to -1..1
-  return Math.max(-1, Math.min(1, score / rows.length));
+  return Math.max(-1, Math.min(1, score / relevant.length));
 }
