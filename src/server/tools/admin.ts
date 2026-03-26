@@ -1,24 +1,22 @@
 /**
  * memory_admin -- Index maintenance and observability.
- *
- * Reindex, stats, health check.
  */
 
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { Store } from '../../store/types.ts';
-import { rebuildIndex } from '../../store/index-manager.ts';
+import { rebuildIndex, syncIndex } from '../../store/index-manager.ts';
+import { existsSync, statSync } from 'node:fs';
 
 export function registerAdminTool(server: McpServer, store: Store): void {
   server.tool(
     'memory_admin',
     'Memory index administration: stats, reindex, health check.',
     {
-      action: z.enum(['stats', 'reindex', 'health']).describe('Admin operation'),
+      action: z.enum(['stats', 'reindex', 'sync', 'health']).describe('Admin operation'),
     },
     async (params) => {
       if (params.action === 'health') {
-        const { existsSync } = await import('node:fs');
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             status: 'ok',
@@ -26,6 +24,7 @@ export function registerAdminTool(server: McpServer, store: Store): void {
             maestroDir: store.maestroDir,
             maestroDirExists: existsSync(store.maestroDir),
             indexEntries: Object.keys(store.index.entries).length,
+            indexBuiltAt: store.index.builtAt || 'never',
           }) }],
         };
       }
@@ -33,11 +32,19 @@ export function registerAdminTool(server: McpServer, store: Store): void {
       if (params.action === 'stats') {
         const entries = Object.values(store.index.entries);
         const withEmbeddings = entries.filter(e => e.embedding !== null).length;
+        const totalTokens = entries.reduce((sum, e) => sum + e.tokenCount, 0);
+        let indexSizeBytes = 0;
+        try {
+          indexSizeBytes = statSync(store.indexPath).size;
+        } catch { /* ignore */ }
+
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             totalEntries: entries.length,
+            totalTokens,
             withEmbeddings,
             embeddingCoverage: entries.length > 0 ? Math.round(withEmbeddings / entries.length * 100) + '%' : 'n/a',
+            indexSizeBytes,
             builtAt: store.index.builtAt,
           }) }],
         };
@@ -48,7 +55,21 @@ export function registerAdminTool(server: McpServer, store: Store): void {
         const count = await rebuildIndex(store);
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
-            reindexed: count,
+            action: 'reindex',
+            indexed: count,
+            durationMs: Date.now() - start,
+          }) }],
+        };
+      }
+
+      if (params.action === 'sync') {
+        const start = Date.now();
+        const updated = await syncIndex(store);
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            action: 'sync',
+            updated,
+            totalEntries: Object.keys(store.index.entries).length,
             durationMs: Date.now() - start,
           }) }],
         };
