@@ -17,6 +17,8 @@ export { selectWithMmr } from './retrieval/mmr.ts';
 export type { MmrResult } from './retrieval/mmr.ts';
 export { keywordSearch } from './retrieval/keyword.ts';
 export { semanticSearch } from './retrieval/semantic.ts';
+export { queryMemories, compileMemories } from './retrieval/engine.ts';
+export type { QueryResult, CompileResult } from './retrieval/engine.ts';
 
 // Workflow signals
 export { scoreStageProximity } from './workflow/stage.ts';
