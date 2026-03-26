@@ -14,6 +14,7 @@ import { keywordSearch } from '../../retrieval/keyword.ts';
 import { mergeSignals, type RetrievalSignal } from '../../retrieval/hybrid.ts';
 import { scoreStageProximity } from '../../workflow/stage.ts';
 import { scoreMemoryEffectiveness } from '../../workflow/feedback.ts';
+import { semanticSearch } from '../../retrieval/semantic.ts';
 
 export function registerQueryTool(server: McpServer, store: Store): void {
   server.tool(
@@ -29,7 +30,7 @@ export function registerQueryTool(server: McpServer, store: Store): void {
     },
     async (params) => {
       // Auto-sync index
-      await syncIndex(store);
+      await syncIndex(store, store.embedProvider);
 
       const limit = params.limit ?? 20;
       const allSignals: RetrievalSignal[][] = [];
@@ -40,6 +41,19 @@ export function registerQueryTool(server: McpServer, store: Store): void {
 
       // Collect all candidate memory IDs
       const candidateIds = new Set(kwSignals.map(s => s.memoryId));
+
+      // Signal 1b: Semantic search (when embeddings available)
+      if (store.embedProvider) {
+        try {
+          const queryVec = await store.embedProvider.embed(params.query);
+          const semSignals = semanticSearch(Array.from(queryVec), store.index);
+          allSignals.push(semSignals);
+          // Add semantic candidates to the candidate set
+          for (const s of semSignals) candidateIds.add(s.memoryId);
+        } catch {
+          // Graceful fallback: skip semantic signal
+        }
+      }
 
       // Signal 2: Pipeline stage scoring
       if (params.stage) {

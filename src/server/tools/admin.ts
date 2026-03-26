@@ -52,7 +52,7 @@ export function registerAdminTool(server: McpServer, store: Store): void {
 
       if (params.action === 'reindex') {
         const start = Date.now();
-        const count = await rebuildIndex(store);
+        const count = await rebuildIndex(store, store.embedProvider);
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             action: 'reindex',
@@ -64,7 +64,7 @@ export function registerAdminTool(server: McpServer, store: Store): void {
 
       if (params.action === 'sync') {
         const start = Date.now();
-        const updated = await syncIndex(store);
+        const updated = await syncIndex(store, store.embedProvider);
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             action: 'sync',

@@ -36,6 +36,7 @@ export interface Store {
   readonly indexPath: string;
   readonly feedbackPath: string;
   index: SidecarIndex;
+  embedProvider?: import('../embeddings/provider.ts').EmbeddingProvider;
 }
 
 export interface ScannedMemory {

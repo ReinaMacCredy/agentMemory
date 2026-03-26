@@ -28,7 +28,7 @@ export function registerCompileTool(server: McpServer, store: Store): void {
       budgetTokens: z.number().optional().describe('Token budget (default 1024)'),
     },
     async (params) => {
-      await syncIndex(store);
+      await syncIndex(store, store.embedProvider);
 
       const budget = params.budgetTokens ?? 1024;
       const allSignals: RetrievalSignal[][] = [];
