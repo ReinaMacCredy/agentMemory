@@ -55,25 +55,9 @@ export function walkDependencyGraph(
   return scores;
 }
 
-/**
- * Load task dependencies from maestro's feature structure.
- * Checks br-mapping.json and task spec files.
- */
 function loadTaskDeps(maestroDir: string, featureName: string): Map<string, TaskInfo> {
   const tasks = new Map<string, TaskInfo>();
   const featureDir = join(maestroDir, 'features', featureName);
-
-  // Try br-mapping.json first
-  const mappingPath = join(featureDir, 'br-mapping.json');
-  if (existsSync(mappingPath)) {
-    try {
-      const mapping = JSON.parse(readFileSync(mappingPath, 'utf-8'));
-      // br-mapping has folderToId and idToFolder but not deps directly
-      // Deps come from task spec files
-    } catch { /* ignore */ }
-  }
-
-  // Scan task directories for spec files with dependency info
   const tasksDir = join(featureDir, 'tasks');
   if (existsSync(tasksDir)) {
     try {

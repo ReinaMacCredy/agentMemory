@@ -90,5 +90,6 @@ function normalizeMeta(raw: Record<string, unknown>): MemoryMeta {
     taskId: typeof raw.taskId === 'string' ? raw.taskId : undefined,
     selectionCount: typeof raw.selectionCount === 'number' ? raw.selectionCount : undefined,
     lastSelectedAt: typeof raw.lastSelectedAt === 'string' ? raw.lastSelectedAt : undefined,
+    connections: Array.isArray(raw.connections) ? raw.connections : undefined,
   };
 }

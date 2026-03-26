@@ -8,8 +8,7 @@
 
 import type { EmbeddingProvider } from './provider.ts';
 
-let pipeline: any = null;
-let extractor: any = null;
+let extractor: unknown = null;
 
 async function getExtractor() {
   if (extractor) return extractor;
@@ -32,7 +31,8 @@ export class LocalEmbeddingProvider implements EmbeddingProvider {
     const ext = await getExtractor();
     if (!ext) throw new Error('Embedding model not available');
 
-    const output = await ext(text, { pooling: 'mean', normalize: true });
+    const run = ext as (text: string, opts: Record<string, unknown>) => Promise<{ data: ArrayLike<number> }>;
+    const output = await run(text, { pooling: 'mean', normalize: true });
     return new Float32Array(output.data);
   }
 

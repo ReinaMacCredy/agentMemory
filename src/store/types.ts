@@ -1,14 +1,18 @@
 /**
  * Core types for the retrieval engine.
- *
- * agentMemory is read-only against .maestro/ memory files.
- * It only writes its own index + feedback files.
  */
+
+export const STAGES = ['discovery', 'research', 'planning', 'execution', 'review'] as const;
+export type Stage = typeof STAGES[number];
+
+export const CATEGORIES = ['decision', 'research', 'architecture', 'convention', 'debug', 'execution'] as const;
+export type Category = typeof CATEGORIES[number];
 
 export interface IndexEntry {
   checksum: string;
   embedding: number[] | null;
   keywords: string[];
+  snippet: string;
   metadata: MemoryMeta;
   tokenCount: number;
 }
@@ -37,6 +41,8 @@ export interface Store {
   readonly feedbackPath: string;
   index: SidecarIndex;
   embedProvider?: import('../embeddings/provider.ts').EmbeddingProvider;
+  /** Cached IDF map -- invalidated when index changes. */
+  idfMap?: Map<string, number>;
 }
 
 export interface ScannedMemory {

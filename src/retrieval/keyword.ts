@@ -68,6 +68,7 @@ export function buildIdfMap(index: SidecarIndex): Map<string, number> {
 export function keywordSearch(
   queryText: string,
   index: SidecarIndex,
+  cachedIdfMap?: Map<string, number>,
 ): RetrievalSignal[] {
   const queryTokens = queryText
     .toLowerCase()
@@ -78,7 +79,7 @@ export function keywordSearch(
   if (queryTokens.length === 0) return [];
 
   const totalEntries = Object.keys(index.entries).length;
-  const idfMap = buildIdfMap(index);
+  const idfMap = cachedIdfMap ?? buildIdfMap(index);
   const signals: RetrievalSignal[] = [];
 
   for (const [relPath, entry] of Object.entries(index.entries)) {
