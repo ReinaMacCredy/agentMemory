@@ -1,0 +1,23 @@
+{
+  "name": "agent-memory",
+  "version": "0.1.0",
+  "description": "Workflow-aware memory MCP server for agent-driven development",
+  "type": "module",
+  "main": "dist/server/mcp.js",
+  "scripts": {
+    "dev": "bun run src/server/mcp.ts",
+    "build": "bun build src/server/mcp.ts --outdir dist/server --target node",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "lint": "tsc --noEmit"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "better-sqlite3": "^11.8.0"
+  }
+}
