@@ -24,6 +24,27 @@ bun run typecheck
 bun test
 ```
 
+## Maestro Integration
+
+This repo is a companion to **maestro** (`~/Code/maestro/`). The relationship:
+
+- **maestro** owns all memory writes (`.maestro/features/*/memory/*.md`)
+- **agentMemory** is a read-only retrieval engine that indexes those files
+- maestro imports agentMemory as a dependency: `"agent-memory": "file:../agentMemory"`
+- The adapter lives in maestro at `src/infra/toolbox/tools/external/agent-memory/`
+- When agentMemory is installed, maestro's DCP uses `compile()` for hybrid retrieval
+- Without agentMemory, maestro falls back to standard keyword scoring
+
+### After Making Changes
+1. `bun run typecheck` in this repo
+2. `cd ~/Code/maestro && bun install` to pick up changes
+3. `bun run typecheck && bun run build` in maestro to verify
+
+### What agentMemory Writes
+- `.maestro/retrieval-index.json` -- sidecar index (keywords, checksums, embeddings)
+- `.maestro/feedback.jsonl` -- task outcome records for the learning loop
+- Nothing else. Never touch `.md` files.
+
 ## Standards
 
 - TypeScript strict mode
